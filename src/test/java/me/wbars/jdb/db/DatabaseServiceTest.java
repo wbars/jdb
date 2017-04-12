@@ -286,4 +286,24 @@ public class DatabaseServiceTest {
         for (int i = 1; i < 10; i++)
             databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
     }
+
+    @Test
+    public void selectWithPredicateParens() throws Exception {
+        createTestTable();
+        tenSampleRows();
+
+        QueryResult result = databaseService.executeQuery("select (`data`) from `test` where (`id` < 5 or `data` = `4`) and (`id` > 3)");
+        assertThat(result.isOk(), is(true));
+        assertTableWithSizeAndValues(1, 1, singletonList(singletonList("4")), result.getTable());
+    }
+
+    @Test
+    public void selectWithPredicateInnerParens() throws Exception {
+        createTestTable();
+        tenSampleRows();
+
+        QueryResult result = databaseService.executeQuery("select (`data`) from `test` where ( (`id` < 5 or `data` = `4`) and (`id` > 3) )");
+        assertThat(result.isOk(), is(true));
+        assertTableWithSizeAndValues(1, 1, singletonList(singletonList("4")), result.getTable());
+    }
 }

@@ -10,6 +10,7 @@ import me.wbars.jdb.table.ColumnData;
 import me.wbars.jdb.utils.Pair;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -120,19 +121,48 @@ public class QueryParser {
     }
 
     private QueryPredicate parseWherePredicate(List<Token> tokens) {
-        Token columnName = getTokenAsType(tokens, 0, TokenType.STRING_VAR);
-        Token operator = getTokenAsType(tokens, 1, TokenType.RELOP);
-        Token value = getTokenAnyOfTypes(tokens, 2, TokenType.STRING_VAR, TokenType.UNSIGNED_INTEGER);
-        return accumulatePredicate(tokens.subList(3, tokens.size()), create(columnName.value, operator.value, value));
+        return parseWherePredicate(tokens.iterator());
     }
 
-    private QueryPredicate accumulatePredicate(List<Token> tokens, QueryPredicate predicate) {
-        while (!tokens.isEmpty()) {
-            if (getTokenAsType(tokens, 0, TokenType.BOOLEAN_RELOP).value.equals("or"))
-                return predicate.or(parseWherePredicate(tokens.subList(1, tokens.size())));
+    private QueryPredicate parseWherePredicate(Iterator<Token> tokens) {
+        return accumulatePredicate(singlePredicate(tokens), tokens);
+    }
 
-            predicate = predicate.and(parseWherePredicate(tokens.subList(1, 4)));
-            tokens = tokens.subList(4, tokens.size());
+    private QueryPredicate singlePredicate(Iterator<Token> tokens) {
+        Token first = getTokenAnyOfTypes(tokens, TokenType.STRING_VAR, TokenType.OPEN_PAREN);
+        if (first.type == TokenType.STRING_VAR) {
+            Token operator = getTokenAsType(tokens, TokenType.RELOP);
+            Token value = getTokenAnyOfTypes(tokens, TokenType.STRING_VAR, TokenType.UNSIGNED_INTEGER);
+            return create(first.value, operator.value, value);
+        }
+        return parseWherePredicate(getParensExpression(tokens));
+    }
+
+    private List<Token> getParensExpression(Iterator<Token> tokens) {
+        List<Token> parensExpression = new ArrayList<>();
+        int parensCounter = 1;
+        while (tokens.hasNext()) {
+            Token next = tokens.next();
+            if (next.type == TokenType.CLOSE_PAREN) parensCounter--;
+            if (next.type == TokenType.OPEN_PAREN) parensCounter++;
+            if (parensCounter == 0) break;
+
+            parensExpression.add(next);
+        }
+        return parensExpression;
+    }
+
+    private Token getTokenAsType(Iterator<Token> tokens, TokenType type) {
+        Token token = tokens.next();
+        if (token.type != type) throw new IllegalArgumentException(token.value + " Expected: " + type.name());
+        return token;
+    }
+
+    private QueryPredicate accumulatePredicate(QueryPredicate predicate, Iterator<Token> tokens) {
+        while (tokens.hasNext()) {
+            if (getTokenAsType(tokens, TokenType.BOOLEAN_RELOP).value.equals("or"))
+                return predicate.or(parseWherePredicate(tokens));
+            predicate = predicate.and(singlePredicate(tokens));
         }
         return predicate;
     }
@@ -163,8 +193,8 @@ public class QueryParser {
         return token;
     }
 
-    private Token getTokenAnyOfTypes(List<Token> tokens, int index, TokenType... types) {
-        Token token = tokens.get(index);
+    private Token getTokenAnyOfTypes(Iterator<Token> tokens, TokenType... types) {
+        Token token = tokens.next();
         Set<TokenType> typesSet = stream(types).collect(toSet());
         if (!typesSet.contains(token.type)) throw new IllegalArgumentException(token.value);
         return token;
