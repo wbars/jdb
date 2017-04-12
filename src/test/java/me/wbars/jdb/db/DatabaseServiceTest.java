@@ -8,6 +8,8 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
@@ -52,9 +54,7 @@ public class DatabaseServiceTest {
         assertThat(columns.get(0).first, is("table"));
         assertThat(columns.get(0).second, is(Type.STRING));
 
-        List<List<String>> rows = table.getRows();
-        assertThat(rows, hasSize(1));
-        assertThat(rows.get(0).get(0), is("test"));
+        assertTableWithSizeAndValues(1, 1, singletonList(singletonList("test")), result.getTable());
     }
 
     @Test
@@ -115,19 +115,7 @@ public class DatabaseServiceTest {
         databaseService.executeQuery("insert into `test`(`id`, `data`) values(1, `a12`)");
         databaseService.executeQuery("insert into `test`(`data`) values(`bw`)");
         databaseService.executeQuery("insert into `test`(`id`) values(3)");
-
-        List<List<String>> rows = storage.selectAllRows("test");
-        assertThat(rows, hasSize(3));
-        rows.forEach(row -> assertThat(row, hasSize(2)));
-
-        assertThat(rows.get(0).get(0), is("1"));
-        assertThat(rows.get(0).get(1), is("a12"));
-
-        assertThat(rows.get(1).get(0), is(nullValue()));
-        assertThat(rows.get(1).get(1), is("bw"));
-
-        assertThat(rows.get(2).get(0), is("3"));
-        assertThat(rows.get(2).get(1), is(nullValue()));
+        assertTableWithSizeAndValues(3, 2, asList(asList("1", "a12"), asList(null, "bw"), asList("3", null)), storage.selectAllRows("test"));
     }
 
     @Test
@@ -138,16 +126,7 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`id`, `data`) from `test`");
         assertThat(result.isOk(), is(true));
-
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(2));
-        rows.forEach(row -> assertThat(row, hasSize(2)));
-
-        assertThat(rows.get(0).get(0), is("1"));
-        assertThat(rows.get(0).get(1), is("a12"));
-
-        assertThat(rows.get(1).get(0), is(nullValue()));
-        assertThat(rows.get(1).get(1), is("bb"));
+        assertTableWithSizeAndValues(2, 2, asList(asList("1", "a12"), asList(null, "bb")), result.getTable());
     }
 
     private void createTestTable() {
@@ -166,15 +145,11 @@ public class DatabaseServiceTest {
         QueryResult result = databaseService.executeQuery("select (`data`) from `test`");
         assertThat(result.isOk(), is(true));
 
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(2));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-        assertThat(rows.get(0).get(0), is("a12"));
-        assertThat(rows.get(1).get(0), is("bb"));
-
         assertThat(result.getTable().getColumns(), hasSize(1));
         assertThat(result.getTable().getColumns().get(0).first, is("data"));
         assertThat(result.getTable().getColumns().get(0).second, is(Type.STRING));
+
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("a12"), singletonList("bb")), result.getTable());
     }
 
     private void populateDummyData() {
@@ -190,16 +165,11 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` = 1");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(2));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-
-        assertThat(rows.get(0).get(0), is("one"));
-        assertThat(rows.get(1).get(0), is("one_again"));
-
         assertThat(result.getTable().getColumns(), hasSize(1));
         assertThat(result.getTable().getColumns().get(0).first, is("data"));
         assertThat(result.getTable().getColumns().get(0).second, is(Type.STRING));
+
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("one"), singletonList("one_again")), result.getTable());
     }
 
     @Test
@@ -209,10 +179,7 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` > 1");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(1));
-
-        assertThat(rows.get(0).get(0), is("two"));
+        assertTableWithSizeAndValues(1, 1, singletonList(singletonList("two")), result.getTable());
     }
 
     @Test
@@ -222,12 +189,7 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 2");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(2));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-
-        assertThat(rows.get(0).get(0), is("one"));
-        assertThat(rows.get(1).get(0), is("one_again"));
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("one"), singletonList("one_again")), result.getTable());
     }
 
     @Test
@@ -237,13 +199,7 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` <= 2");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(3));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-
-        assertThat(rows.get(0).get(0), is("one"));
-        assertThat(rows.get(1).get(0), is("one_again"));
-        assertThat(rows.get(2).get(0), is("two"));
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("one"), singletonList("one_again"), singletonList("two")), result.getTable());
     }
 
     @Test
@@ -253,13 +209,7 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` >= 1");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(3));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-
-        assertThat(rows.get(0).get(0), is("one"));
-        assertThat(rows.get(1).get(0), is("one_again"));
-        assertThat(rows.get(2).get(0), is("two"));
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("one"), singletonList("one_again"), singletonList("two")), result.getTable());
     }
 
     @Test
@@ -269,12 +219,7 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` != 2");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(2));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-
-        assertThat(rows.get(0).get(0), is("one"));
-        assertThat(rows.get(1).get(0), is("one_again"));
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("one"), singletonList("one_again")), result.getTable());
     }
 
     @Test
@@ -284,11 +229,7 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` <= 1 and `data` != `one`");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(1));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-
-        assertThat(rows.get(0).get(0), is("one_again"));
+        assertTableWithSizeAndValues(1, 1, singletonList(singletonList("one_again")), result.getTable());
     }
 
     @Test
@@ -298,59 +239,51 @@ public class DatabaseServiceTest {
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 2 or `data` = `two`");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(3));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-
-        assertThat(rows.get(0).get(0), is("one"));
-        assertThat(rows.get(1).get(0), is("one_again"));
-        assertThat(rows.get(2).get(0), is("two"));
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("one"), singletonList("one_again"), singletonList("two")), result.getTable());
     }
 
     @Test
     public void selectWithPredicateOrder() throws Exception {
         createTestTable();
-        for (int i = 1; i < 10; i++)
-            databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
+        tenSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` > 3 and `data` = `4` or `id` < 3");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(3));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-        assertThat(rows.get(0).get(0), is("1"));
-        assertThat(rows.get(1).get(0), is("2"));
-        assertThat(rows.get(2).get(0), is("4"));
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("1"), singletonList("2"), singletonList("4")), result.getTable());
     }
 
     @Test
     public void selectWithPredicateReverseOrder() throws Exception {
         createTestTable();
-        for (int i = 1; i < 10; i++)
-            databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
+        tenSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 3 or `data` = `4` and `id` > 3");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(3));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-        assertThat(rows.get(0).get(0), is("1"));
-        assertThat(rows.get(1).get(0), is("2"));
-        assertThat(rows.get(2).get(0), is("4"));
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("1"), singletonList("2"), singletonList("4")), result.getTable());
     }
 
     @Test
     public void selectWithPredicateDualOrder() throws Exception {
         createTestTable();
-        for (int i = 1; i < 10; i++)
-            databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
+        tenSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 3 and `data` = `2` or `id` > 5 and `data` = `6`");
         assertThat(result.isOk(), is(true));
-        List<List<String>> rows = result.getTable().getRows();
-        assertThat(rows, hasSize(2));
-        rows.forEach(row -> assertThat(row, hasSize(1)));
-        assertThat(rows.get(0).get(0), is("2"));
-        assertThat(rows.get(1).get(0), is("6"));
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("2"), singletonList("6")), result.getTable());
+    }
+
+    private void assertTableWithSizeAndValues(int height, int width, List<List<String>> values, Table table) {
+        assertTableWithSizeAndValues(height, width, values, table.getRows());
+    }
+
+    private void assertTableWithSizeAndValues(int height, int width, List<List<String>> values, List<List<String>> rows) {
+        assertThat(rows, hasSize(height));
+        rows.forEach(row -> assertThat(row, hasSize(width)));
+        assertThat(rows, is(values));
+    }
+
+    private void tenSampleRows() {
+        for (int i = 1; i < 10; i++)
+            databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
     }
 }
