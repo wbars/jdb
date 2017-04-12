@@ -306,4 +306,51 @@ public class DatabaseServiceTest {
         assertThat(rows.get(1).get(0), is("one_again"));
         assertThat(rows.get(2).get(0), is("two"));
     }
+
+    @Test
+    public void selectWithPredicateOrder() throws Exception {
+        createTestTable();
+        for (int i = 1; i < 10; i++)
+            databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
+
+        QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` > 3 and `data` = `4` or `id` < 3");
+        assertThat(result.isOk(), is(true));
+        List<List<String>> rows = result.getTable().getRows();
+        assertThat(rows, hasSize(3));
+        rows.forEach(row -> assertThat(row, hasSize(1)));
+        assertThat(rows.get(0).get(0), is("1"));
+        assertThat(rows.get(1).get(0), is("2"));
+        assertThat(rows.get(2).get(0), is("4"));
+    }
+
+    @Test
+    public void selectWithPredicateReverseOrder() throws Exception {
+        createTestTable();
+        for (int i = 1; i < 10; i++)
+            databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
+
+        QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 3 or `data` = `4` and `id` > 3");
+        assertThat(result.isOk(), is(true));
+        List<List<String>> rows = result.getTable().getRows();
+        assertThat(rows, hasSize(3));
+        rows.forEach(row -> assertThat(row, hasSize(1)));
+        assertThat(rows.get(0).get(0), is("1"));
+        assertThat(rows.get(1).get(0), is("2"));
+        assertThat(rows.get(2).get(0), is("4"));
+    }
+
+    @Test
+    public void selectWithPredicateDualOrder() throws Exception {
+        createTestTable();
+        for (int i = 1; i < 10; i++)
+            databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
+
+        QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 3 and `data` = `2` or `id` > 5 and `data` = `6`");
+        assertThat(result.isOk(), is(true));
+        List<List<String>> rows = result.getTable().getRows();
+        assertThat(rows, hasSize(2));
+        rows.forEach(row -> assertThat(row, hasSize(1)));
+        assertThat(rows.get(0).get(0), is("2"));
+        assertThat(rows.get(1).get(0), is("6"));
+    }
 }

@@ -19,6 +19,7 @@ import static java.lang.Math.min;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
+import static me.wbars.jdb.db.QueryPredicateFactory.create;
 import static me.wbars.jdb.scanner.TokenType.*;
 import static me.wbars.jdb.utils.CollectionsUtils.concat;
 import static me.wbars.jdb.utils.CollectionsUtils.indexes;
@@ -122,13 +123,18 @@ public class QueryParser {
         Token columnName = getTokenAsType(tokens, 0, TokenType.STRING_VAR);
         Token operator = getTokenAsType(tokens, 1, TokenType.RELOP);
         Token value = getTokenAnyOfTypes(tokens, 2, TokenType.STRING_VAR, TokenType.UNSIGNED_INTEGER);
-        QueryPredicate predicate = QueryPredicateFactory.create(columnName.value, operator.value, value);
+        return accumulatePredicate(tokens.subList(3, tokens.size()), create(columnName.value, operator.value, value));
+    }
 
-        if (tokens.size() == 3) return predicate;
-        Token rel = getTokenAsType(tokens, 3, TokenType.BOOLEAN_RELOP);
-        QueryPredicate restPredicate = parseWherePredicate(tokens.subList(4, tokens.size()));
-        return rel.value.equals("and") ? predicate.and(restPredicate) : predicate.or(restPredicate);
+    private QueryPredicate accumulatePredicate(List<Token> tokens, QueryPredicate predicate) {
+        while (!tokens.isEmpty()) {
+            if (getTokenAsType(tokens, 0, TokenType.BOOLEAN_RELOP).value.equals("or"))
+                return predicate.or(parseWherePredicate(tokens.subList(1, tokens.size())));
 
+            predicate = predicate.and(parseWherePredicate(tokens.subList(1, 4)));
+            tokens = tokens.subList(4, tokens.size());
+        }
+        return predicate;
     }
 
     private List<ColumnData> parseColumns(List<Token> tokens) {
