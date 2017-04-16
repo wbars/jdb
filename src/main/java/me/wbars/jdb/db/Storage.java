@@ -1,7 +1,6 @@
 package me.wbars.jdb.db;
 
 import me.wbars.jdb.query.QueryPredicate;
-import me.wbars.jdb.query.SelectQuery;
 import me.wbars.jdb.table.ColumnData;
 import me.wbars.jdb.table.Table;
 import me.wbars.jdb.table.TableRow;
@@ -58,7 +57,7 @@ public class Storage {
     }
 
     public List<List<String>> selectAllRows(String tableName) {
-        return selectRows(tableName, getTableColumnsNames(tableName), SelectQuery.ACCEPT_ALL);
+        return selectRows(tableName, getTableColumnsNames(tableName), null);
     }
 
     public List<List<String>> selectRows(String tableName, List<String> columns, QueryPredicate predicate) {
@@ -72,7 +71,7 @@ public class Storage {
         List<ColumnData> tableColumns = getTableColumns(tableName);
 
         return table.getRows().stream()
-                .filter(values -> predicate.test(values, tableColumns))
+                .filter(values -> predicate == null || predicate.test(values, tableColumns))
                 .map(values -> withIndexes(values, columnsIndexesToInclude))
                 .collect(toList());
     }

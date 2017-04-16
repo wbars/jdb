@@ -6,7 +6,6 @@ import me.wbars.jdb.db.QueryResult;
 import java.util.List;
 
 public class SelectQuery implements Query {
-    public static final QueryPredicate ACCEPT_ALL = (row, columns) -> true;
 
     private final String tableName;
     private final List<String> columns;
@@ -19,7 +18,7 @@ public class SelectQuery implements Query {
     }
 
     public SelectQuery(String tableName, List<String> columns) {
-        this(tableName, columns, ACCEPT_ALL);
+        this(tableName, columns, null);
     }
 
     @Override

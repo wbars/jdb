@@ -20,7 +20,7 @@ import static java.lang.Math.min;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
-import static me.wbars.jdb.db.QueryPredicateFactory.create;
+import static me.wbars.jdb.query.QueryPredicate.create;
 import static me.wbars.jdb.scanner.TokenType.*;
 import static me.wbars.jdb.utils.CollectionsUtils.concat;
 import static me.wbars.jdb.utils.CollectionsUtils.indexes;
@@ -36,6 +36,13 @@ public class QueryParser {
         prefixQueryProcessors.add(new Pair<>(this::isValidDescribeTable, this::createDescribeTable));
         prefixQueryProcessors.add(new Pair<>(this::isValidInsert, this::createInsert));
         prefixQueryProcessors.add(new Pair<>(this::isValidSelect, this::createSelect));
+    }
+
+    private static Type getType(String columnName, List<ColumnData> columns) {
+        return columns.stream()
+                .filter(r -> r.first.equals(columnName))
+                .map(r -> r.second).findAny()
+                .orElseThrow(IllegalArgumentException::new);
     }
 
     private boolean hasPrefix(List<Token> base, TokenType... prefixTypes) {
@@ -133,7 +140,7 @@ public class QueryParser {
         if (first.type == TokenType.STRING_VAR) {
             Token operator = getTokenAsType(tokens, TokenType.RELOP);
             Token value = getTokenAnyOfTypes(tokens, TokenType.STRING_VAR, TokenType.UNSIGNED_INTEGER);
-            return create(first.value, operator.value, value);
+            return create(first.value, operator.value, value, Type.fromToken(value));
         }
         return parseWherePredicate(getParensExpression(tokens));
     }

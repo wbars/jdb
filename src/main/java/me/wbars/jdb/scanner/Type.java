@@ -16,4 +16,10 @@ public enum Type {
     public static Set<Type> all() {
         return stream(values()).collect(toSet());
     }
+
+    public static Type fromToken(Token value) {
+        if (value.type == TokenType.UNSIGNED_INTEGER) return INTEGER;
+        if (value.type == TokenType.STRING_VAR) return STRING;
+        throw new IllegalArgumentException();
+    }
 }

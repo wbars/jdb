@@ -79,7 +79,7 @@ public class QueryParserTest {
         assertThat(columns, hasSize(2));
         assertThat(columns.get(0), is("id"));
         assertThat(columns.get(1), is("data"));
-        assertThat(((SelectQuery) query).getPredicate(), is((SelectQuery.ACCEPT_ALL)));
+        assertThat(((SelectQuery) query).getPredicate(), is((nullValue())));
     }
 
     @Test
@@ -92,6 +92,6 @@ public class QueryParserTest {
         assertThat(columns, hasSize(1));
         assertThat(columns.get(0), is("data"));
 
-        assertThat(((SelectQuery) query).getPredicate(), is(not(SelectQuery.ACCEPT_ALL)));
+        assertThat(((SelectQuery) query).getPredicate(), is(notNullValue()));
     }
 }
