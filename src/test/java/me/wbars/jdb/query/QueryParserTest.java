@@ -94,4 +94,12 @@ public class QueryParserTest {
 
         assertThat(((SelectQuery) query).getPredicate(), is(notNullValue()));
     }
+
+    @Test
+    public void createIndexParser() throws Exception {
+        Query query = parser.parse("create index `id` on `test`");
+        assertThat(query, is(instanceOf(CreateIndexQuery.class)));
+        assertThat(((CreateIndexQuery) query).getTableName(), is("test"));
+        assertThat(((CreateIndexQuery) query).getColumn(), is("id"));
+    }
 }

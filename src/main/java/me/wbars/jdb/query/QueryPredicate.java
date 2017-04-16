@@ -11,17 +11,17 @@ import static java.lang.Integer.parseInt;
 import static me.wbars.jdb.query.CompareSign.fromAlias;
 import static me.wbars.jdb.utils.CollectionsUtils.indexes;
 
-public class QueryPredicate<T extends Comparable> {
+public class QueryPredicate<T extends Comparable<T>> {
     private QueryPredicate and;
     private QueryPredicate or;
     private final String columnName;
     private final CompareSign sign;
-    private final Function<String, Comparable<T>> compareMapper;
+    private final Function<String, T> compareMapper;
     private final T valueToCompare;
 
     public QueryPredicate(String columnName,
                           CompareSign sign,
-                          Function<String, Comparable<T>> compareMapper,
+                          Function<String, T> compareMapper,
                           T valueToCompare) {
         this.columnName = columnName;
         this.sign = sign;
@@ -67,5 +67,17 @@ public class QueryPredicate<T extends Comparable> {
         return indexes(columns)
                 .filter(i -> columns.get(i).first.equals(columnName))
                 .findAny().orElseThrow(IllegalArgumentException::new);
+    }
+
+    public String getColumn() {
+        return columnName;
+    }
+
+    public CompareSign getSign() {
+        return sign;
+    }
+
+    public T getValueToCompare() {
+        return valueToCompare;
     }
 }

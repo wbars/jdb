@@ -36,13 +36,7 @@ public class QueryParser {
         prefixQueryProcessors.add(new Pair<>(this::isValidDescribeTable, this::createDescribeTable));
         prefixQueryProcessors.add(new Pair<>(this::isValidInsert, this::createInsert));
         prefixQueryProcessors.add(new Pair<>(this::isValidSelect, this::createSelect));
-    }
-
-    private static Type getType(String columnName, List<ColumnData> columns) {
-        return columns.stream()
-                .filter(r -> r.first.equals(columnName))
-                .map(r -> r.second).findAny()
-                .orElseThrow(IllegalArgumentException::new);
+        prefixQueryProcessors.add(new Pair<>(this::isValidCreateIndex, this::createIndexQuery));
     }
 
     private boolean hasPrefix(List<Token> base, TokenType... prefixTypes) {
@@ -55,6 +49,10 @@ public class QueryParser {
 
     private boolean isValidShowTables(List<Token> tokens) {
         return tokens.size() == 2 && hasPrefix(tokens, SHOW, TABLES);
+    }
+
+    private boolean isValidCreateIndex(List<Token> tokens) {
+        return hasPrefix(tokens, CREATE, INDEX);
     }
 
     private boolean isValidInsert(List<Token> tokens) {
@@ -71,6 +69,13 @@ public class QueryParser {
 
     private DescribeTableQuery createDescribeTable(List<Token> tokens) {
         return new DescribeTableQuery(getTokenAsType(tokens, 2, TokenType.STRING_VAR).value);
+    }
+
+    private CreateIndexQuery createIndexQuery(List<Token> tokens) {
+        String column = getTokenAsType(tokens, 2, TokenType.STRING_VAR).value;
+        int indexOn = getIndexOfToken(tokens, TokenType.ON);
+        if (indexOn < 0) throw new IllegalArgumentException();
+        return new CreateIndexQuery(getTokenAsType(tokens, indexOn + 1, TokenType.STRING_VAR).value, column);
     }
 
     private InsertQuery createInsert(List<Token> tokens) {

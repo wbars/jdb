@@ -51,7 +51,8 @@ public enum TokenType {
     FROM(Pattern.compile("^from$")),
     WHERE(Pattern.compile("^where$")),
     RELOP(Pattern.compile("^>|<|<=|>=|=|!=$")),
-    BOOLEAN_RELOP(Pattern.compile("^and|or$"));
+    BOOLEAN_RELOP(Pattern.compile("^and|or$")),
+    INDEX(Pattern.compile("^index$")), ON(Pattern.compile("^on$"));
 
     private final Pattern pattern;
 

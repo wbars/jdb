@@ -83,4 +83,11 @@ public class DatabaseService {
                 .filter(r -> columns.contains(r.first))
                 .collect(toList());
     }
+
+    public QueryResult createIndex(String tableName, String column) {
+        if (!storage.tableExists(tableName)) return fail(String.format("Table `%s` not exists", tableName));
+        if (storage.indexExists(tableName, column)) return fail("Index exists");
+        storage.createIndex(tableName, column);
+        return ok(null);
+    }
 }

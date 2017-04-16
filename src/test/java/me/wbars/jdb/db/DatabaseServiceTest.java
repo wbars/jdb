@@ -306,4 +306,14 @@ public class DatabaseServiceTest {
         assertThat(result.isOk(), is(true));
         assertTableWithSizeAndValues(1, 1, singletonList(singletonList("4")), result.getTable());
     }
+
+    @Test
+    public void createIndex() throws Exception {
+        createTestTable();
+        tenSampleRows();
+
+        databaseService.executeQuery("create index `id` on `test`");
+        QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` < 3");
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("1"), singletonList("2")), result.getTable());
+    }
 }
