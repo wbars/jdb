@@ -1,6 +1,7 @@
 package me.wbars.jdb.utils;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,5 +38,22 @@ public class CollectionsUtils {
 
     public static <T> List<List<T>> wrapInLists(List<T> l) {
         return l.stream().map(Collections::singletonList).collect(toList());
+    }
+
+    public static <T, S> List<T> distinctBy(List<T> rows, Function<T, S> f) {
+        return new ArrayList<>(rows.stream().collect(Collectors.toMap(f, t -> t)).values());
+    }
+
+    public static <T> Set<T> singleSet(T item) {
+        Set<T> result = new HashSet<>();
+        result.add(item);
+        return result;
+    }
+
+    public static <T> Set<T> merge(Set<T> set, Set<T> set1) {
+        Set<T> result = new HashSet<>();
+        result.addAll(set);
+        result.addAll(set1);
+        return result;
     }
 }

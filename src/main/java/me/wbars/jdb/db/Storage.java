@@ -97,7 +97,11 @@ public class Storage {
 
     private Stream<List<String>> tryIndexScan(String tableName, QueryPredicate predicate, List<ColumnData> tableColumns) {
         Index<? extends Comparable<?>> index = predicate != null ? indexes.getOrDefault(tableName, emptyMap()).get(predicate.getColumn()) : null;
-        return index != null && predicate.getSign() != NE ? index.scan(predicate, tables.get(tableName).getRows()) : seqScan(predicate, tables.get(tableName), tableColumns);
+        return validPredicate(predicate, index) ? index.scan(predicate, tables.get(tableName).getRows()) : seqScan(predicate, tables.get(tableName), tableColumns);
+    }
+
+    private boolean validPredicate(QueryPredicate predicate, Index<? extends Comparable<?>> index) {
+        return index != null && predicate.getSign() != NE && predicate.isSingle();
     }
 
     private Stream<List<String>> seqScan(QueryPredicate predicate, Table table, List<ColumnData> tableColumns) {

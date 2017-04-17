@@ -80,4 +80,8 @@ public class QueryPredicate<T extends Comparable<T>> {
     public T getValueToCompare() {
         return valueToCompare;
     }
+
+    public boolean isSingle() {
+        return and == null && or == null;
+    }
 }

@@ -6,12 +6,18 @@ import me.wbars.jdb.table.ColumnData;
 import me.wbars.jdb.table.Table;
 import me.wbars.jdb.utils.CollectionsUtils;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Stream.concat;
 import static me.wbars.jdb.query.CompareSign.*;
+import static me.wbars.jdb.utils.CollectionsUtils.distinctBy;
 
 public class Index<T extends Comparable<T>> {
     private final BTree<T> bTree;
@@ -21,7 +27,7 @@ public class Index<T extends Comparable<T>> {
     }
 
     public Stream<List<String>> scan(QueryPredicate<T> predicate, List<List<String>> rows) {
-        return getIndexes(bTree, predicate).map(rows::get);
+        return getIndexes(bTree, predicate).sorted().map(rows::get);
     }
 
     private Stream<Integer> getIndexes(BTree<T> bTree, final QueryPredicate<T> predicate) {
@@ -65,14 +71,50 @@ public class Index<T extends Comparable<T>> {
         return new Index<>(createBTree(mapper, getIndex(column, table.getColumns()), table.getRows()));
     }
 
+    //todo test
+    public static <T extends Comparable<T>> List<List<String>> sortByColumn(List<List<String>> rows, int index, Function<String, T> mapper) {
+        return rows.stream()
+                .sorted(Comparator.comparing(s -> mapper.apply(s.get(index))))
+                .collect(Collectors.toList());
+    }
+
     private static <T extends Comparable<T>> BTree<T> createBTree(Function<String, T> mapper, int index, List<List<String>> rows) {
-        int mid = rows.size() / 2; //todo balance
-        BTree<T> bTree = new BTree<>(mapper.apply(rows.get(mid).get(index))); //handle null
-        bTree.getRowsIndexes().add(mid);
-        for (int i = 0; i < rows.size(); i++) {
-            if (i != mid) bTree.insert(mapper.apply(rows.get(i).get(index)), i);
+        return createBTree(mapper, index, getDistinctSortedRows(mapper, index, rows), getIndexesWithColumnValue(mapper, index, rows));
+    }
+
+    private static <T extends Comparable<T>> List<List<String>> getDistinctSortedRows(Function<String, T> mapper, int index, List<List<String>> rows) {
+        return sortByColumn(distinctBy(rows, row -> mapper.apply(row.get(index))), index, mapper);
+    }
+
+    private static <T extends Comparable<T>> Map<T, Set<Integer>> getIndexesWithColumnValue(Function<String, T> mapper,
+                                                                                            int index,
+                                                                                            List<List<String>> rows) {
+        return CollectionsUtils.indexes(rows).collect(toMap(
+                i -> mapper.apply(rows.get(i).get(index)),
+                CollectionsUtils::singleSet,
+                CollectionsUtils::merge
+        ));
+    }
+
+    private static <T extends Comparable<T>> BTree<T> createBTree(final Function<String, T> mapper,
+                                                                  final int index,
+                                                                  List<List<String>> rows,
+                                                                  final Map<T, Set<Integer>> indexes) {
+        if (rows.isEmpty()) return null;
+        if (rows.size() == 1) {
+            T columnValue = mapper.apply(rows.get(0).get(index));
+            BTree<T> root = new BTree<>(columnValue);
+            root.getRowsIndexes().addAll(indexes.get(columnValue));
+            return root;
         }
-        return bTree;
+
+        int mid = rows.size() >>> 1;
+        T midColumnValue = mapper.apply(rows.get(mid).get(index));
+        BTree<T> root = new BTree<>(midColumnValue);
+        root.getRowsIndexes().addAll(indexes.get(midColumnValue));
+        root.setLeft(createBTree(mapper, index, rows.subList(0, mid), indexes));
+        root.setRight(createBTree(mapper, index, rows.subList(mid + 1, rows.size()), indexes));
+        return root;
     }
 
     private static int getIndex(String columnName, List<ColumnData> columns) {

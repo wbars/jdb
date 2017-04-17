@@ -245,7 +245,7 @@ public class DatabaseServiceTest {
     @Test
     public void selectWithPredicateOrder() throws Exception {
         createTestTable();
-        tenSampleRows();
+        nineSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` > 3 and `data` = `4` or `id` < 3");
         assertThat(result.isOk(), is(true));
@@ -255,7 +255,7 @@ public class DatabaseServiceTest {
     @Test
     public void selectWithPredicateReverseOrder() throws Exception {
         createTestTable();
-        tenSampleRows();
+        nineSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 3 or `data` = `4` and `id` > 3");
         assertThat(result.isOk(), is(true));
@@ -265,7 +265,7 @@ public class DatabaseServiceTest {
     @Test
     public void selectWithPredicateDualOrder() throws Exception {
         createTestTable();
-        tenSampleRows();
+        nineSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `id` < 3 and `data` = `2` or `id` > 5 and `data` = `6`");
         assertThat(result.isOk(), is(true));
@@ -282,7 +282,7 @@ public class DatabaseServiceTest {
         assertThat(rows, is(values));
     }
 
-    private void tenSampleRows() {
+    private void nineSampleRows() {
         for (int i = 1; i < 10; i++)
             databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", i, String.valueOf(i)));
     }
@@ -290,7 +290,7 @@ public class DatabaseServiceTest {
     @Test
     public void selectWithPredicateParens() throws Exception {
         createTestTable();
-        tenSampleRows();
+        nineSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where (`id` < 5 or `data` = `4`) and (`id` > 3)");
         assertThat(result.isOk(), is(true));
@@ -300,7 +300,7 @@ public class DatabaseServiceTest {
     @Test
     public void selectWithPredicateInnerParens() throws Exception {
         createTestTable();
-        tenSampleRows();
+        nineSampleRows();
 
         QueryResult result = databaseService.executeQuery("select (`data`) from `test` where ( (`id` < 5 or `data` = `4`) and (`id` > 3) )");
         assertThat(result.isOk(), is(true));
@@ -310,10 +310,16 @@ public class DatabaseServiceTest {
     @Test
     public void createIndex() throws Exception {
         createTestTable();
-        tenSampleRows();
+        nineSampleRows();
 
         databaseService.executeQuery("create index `id` on `test`");
         QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` < 3");
         assertTableWithSizeAndValues(2, 1, asList(singletonList("1"), singletonList("2")), result.getTable());
+
+        result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 7");
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("7"), singletonList("8"), singletonList("9")), result.getTable());
+
+        result = databaseService.executeQuery("select (`id`) from `test` where `id` = 3");
+        assertTableWithSizeAndValues(1, 1, singletonList(singletonList("3")), result.getTable());
     }
 }
