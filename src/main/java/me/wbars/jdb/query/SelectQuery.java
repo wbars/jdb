@@ -9,9 +9,9 @@ public class SelectQuery implements Query {
 
     private final String tableName;
     private final List<String> columns;
-    private final QueryPredicate predicate;
+    private final QueryPredicate<? extends Comparable<?>> predicate;
 
-    public SelectQuery(String tableName, List<String> columns, QueryPredicate predicate) {
+    public SelectQuery(String tableName, List<String> columns, QueryPredicate<? extends Comparable<?>> predicate) {
         this.tableName = tableName;
         this.columns = columns;
         this.predicate = predicate;

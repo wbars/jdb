@@ -19,7 +19,7 @@ import static java.util.stream.Stream.concat;
 import static me.wbars.jdb.query.CompareSign.*;
 import static me.wbars.jdb.utils.CollectionsUtils.distinctBy;
 
-public class Index<T extends Comparable<T>> {
+public abstract class Index<T extends Comparable<T>> {
     private final BTree<T> bTree;
 
     public Index(BTree<T> bTree) {
@@ -67,12 +67,7 @@ public class Index<T extends Comparable<T>> {
         return btree != null ? btree.getRowsIndexes().stream() : Stream.empty();
     }
 
-    public static <T extends Comparable<T>> Index<T> create(Table table, String column, Function<String, T> mapper) {
-        return new Index<>(createBTree(mapper, getIndex(column, table.getColumns()), table.getRows()));
-    }
-
-    //todo test
-    public static <T extends Comparable<T>> List<List<String>> sortByColumn(List<List<String>> rows, int index, Function<String, T> mapper) {
+    private static <T extends Comparable<T>> List<List<String>> sortByColumn(List<List<String>> rows, int index, Function<String, T> mapper) {
         return rows.stream()
                 .sorted(Comparator.comparing(s -> mapper.apply(s.get(index))))
                 .collect(Collectors.toList());
@@ -121,5 +116,19 @@ public class Index<T extends Comparable<T>> {
         return CollectionsUtils.indexes(columns)
                 .filter(i -> columns.get(i).first.equals(columnName))
                 .findAny().orElseThrow(IllegalArgumentException::new);
+    }
+
+    public void insert(String value, int index) {
+        bTree.insert(map(value), index);
+    }
+
+    abstract T map(String s);
+
+    public static Index<Integer> createIntIndex(Table table, String column) {
+        return new IntegerIndex(createBTree(Integer::parseInt, getIndex(column, table.getColumns()), table.getRows()));
+    }
+
+    public static Index<String> createStringIndex(Table table, String column) {
+        return new StringIndex(createBTree(Function.identity(), getIndex(column, table.getColumns()), table.getRows()));
     }
 }

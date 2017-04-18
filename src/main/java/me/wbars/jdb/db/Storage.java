@@ -52,13 +52,14 @@ public class Storage {
 
     public void insertRow(String tableName, Map<String, String> columnsAndRows) {
         Table table = tables.get(tableName);
-        table.addRow(
-                new TableRow(
-                        table.getColumns().stream()
-                                .map(c -> columnsAndRows.get(c.first))
-                                .collect(toList())
-                )
-        );
+        List<String> row = table.getColumns().stream()
+                .map(c -> columnsAndRows.get(c.first))
+                .collect(toList());
+        table.addRow(new TableRow(row));
+        Map<String, Index<? extends Comparable<?>>> indexes = this.indexes.getOrDefault(tableName, emptyMap());
+        columnsAndRows.entrySet().stream()
+                .filter(r -> r.getValue() != null && indexes.containsKey(r.getKey()))
+                .forEach(r -> indexes.get(r.getKey()).insert(r.getValue(), table.getRows().size() - 1));
     }
 
     public List<List<String>> selectAllRows(String tableName) {
@@ -82,9 +83,9 @@ public class Storage {
             throw new IllegalArgumentException("Index already exists");
 
         if (getType(column, getTableColumns(tableName)) == Type.STRING) {
-            indexes.compute(tableName, (s, b) -> new HashMap<>()).put(column, Index.create(tables.get(tableName), column, s -> s));
+            indexes.compute(tableName, (s, b) -> new HashMap<>()).put(column, Index.createStringIndex(tables.get(tableName), column));
         } else {
-            indexes.compute(tableName, (s, b) -> new HashMap<>()).put(column, Index.create(tables.get(tableName), column, Integer::parseInt));
+            indexes.compute(tableName, (s, b) -> new HashMap<>()).put(column, Index.createIntIndex(tables.get(tableName), column));
         }
     }
 

@@ -322,4 +322,22 @@ public class DatabaseServiceTest {
         result = databaseService.executeQuery("select (`id`) from `test` where `id` = 3");
         assertTableWithSizeAndValues(1, 1, singletonList(singletonList("3")), result.getTable());
     }
+
+    @Test
+    public void createIndexInsertValue() throws Exception {
+        createTestTable();
+        nineSampleRows();
+
+        databaseService.executeQuery("create index `id` on `test`");
+
+        databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", 10, "10"));
+        databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", 11, "11"));
+        databaseService.executeQuery(String.format("insert into `test`(`id`, `data`) values(%d, `%s`)", 0, "0"));
+
+        QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` > 8");
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("9"), singletonList("10"), singletonList("11")), result.getTable());
+
+        result = databaseService.executeQuery("select (`id`) from `test` where `id` < 2");
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("1"), singletonList("0")), result.getTable());
+    }
 }

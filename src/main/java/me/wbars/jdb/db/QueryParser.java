@@ -132,15 +132,15 @@ public class QueryParser {
         );
     }
 
-    private QueryPredicate parseWherePredicate(List<Token> tokens) {
+    private QueryPredicate<? extends Comparable<?>> parseWherePredicate(List<Token> tokens) {
         return parseWherePredicate(tokens.iterator());
     }
 
-    private QueryPredicate parseWherePredicate(Iterator<Token> tokens) {
+    private QueryPredicate<? extends Comparable<?>> parseWherePredicate(Iterator<Token> tokens) {
         return accumulatePredicate(singlePredicate(tokens), tokens);
     }
 
-    private QueryPredicate singlePredicate(Iterator<Token> tokens) {
+    private QueryPredicate<? extends Comparable<?>> singlePredicate(Iterator<Token> tokens) {
         Token first = getTokenAnyOfTypes(tokens, TokenType.STRING_VAR, TokenType.OPEN_PAREN);
         if (first.type == TokenType.STRING_VAR) {
             Token operator = getTokenAsType(tokens, TokenType.RELOP);
@@ -170,7 +170,7 @@ public class QueryParser {
         return token;
     }
 
-    private QueryPredicate accumulatePredicate(QueryPredicate predicate, Iterator<Token> tokens) {
+    private QueryPredicate<? extends Comparable<?>> accumulatePredicate(QueryPredicate<? extends Comparable<?>> predicate, Iterator<Token> tokens) {
         while (tokens.hasNext()) {
             if (getTokenAsType(tokens, TokenType.BOOLEAN_RELOP).value.equals("or"))
                 return predicate.or(parseWherePredicate(tokens));

@@ -73,7 +73,7 @@ public class DatabaseService {
                 .collect(toSet());
     }
 
-    public QueryResult select(String tableName, List<String> columns, QueryPredicate predicate) {
+    public QueryResult select(String tableName, List<String> columns, QueryPredicate<? extends Comparable<?>> predicate) {
         if (!storage.tableExists(tableName)) return fail(String.format("Table `%s` not exists", tableName));
         return ok(create(tableName, getSelectedColumns(tableName, columns), storage.selectRows(tableName, columns, predicate)));
     }

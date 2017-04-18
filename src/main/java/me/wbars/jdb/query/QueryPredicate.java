@@ -29,19 +29,19 @@ public class QueryPredicate<T extends Comparable<T>> {
         this.valueToCompare = valueToCompare;
     }
 
-    public static QueryPredicate create(String columnName, String operator, Token value, Type type) {
+    public static QueryPredicate<? extends Comparable<?>> create(String columnName, String operator, Token value, Type type) {
         return type == Type.INTEGER ?
                 new QueryPredicate<>(columnName, fromAlias(operator), Integer::parseInt, parseInt(value.value))
                 : new QueryPredicate<>(columnName, fromAlias(operator), s -> s, value.value);
     }
 
-    public QueryPredicate and(QueryPredicate other) {
+    public QueryPredicate<T> and(QueryPredicate<? extends Comparable<?>> other) {
         if (and != null) throw new IllegalStateException();
         and = other;
         return this;
     }
 
-    public QueryPredicate or(QueryPredicate other) {
+    public QueryPredicate<T> or(QueryPredicate<? extends Comparable<?>> other) {
         if (or != null) throw new IllegalStateException();
         or = other;
         return this;
