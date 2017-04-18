@@ -56,4 +56,8 @@ public class CollectionsUtils {
         result.addAll(set1);
         return result;
     }
+
+    public static <T, S> List<T> withoutNulls(List<T> l, Function<T, S> f) {
+        return l.stream().filter(a -> f.apply(a) != null).collect(toList());
+    }
 }

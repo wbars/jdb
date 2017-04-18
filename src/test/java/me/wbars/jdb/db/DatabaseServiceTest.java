@@ -340,4 +340,26 @@ public class DatabaseServiceTest {
         result = databaseService.executeQuery("select (`id`) from `test` where `id` < 2");
         assertTableWithSizeAndValues(2, 1, asList(singletonList("1"), singletonList("0")), result.getTable());
     }
+
+    @Test
+    public void testIndexWithNull() throws Exception {
+        createTestTable();
+        nineSampleRows();
+        databaseService.executeQuery("insert into `test`(`data`) values(`10`)");
+        databaseService.executeQuery("create index `id` on `test`");
+
+        QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 8");
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("8"), singletonList("9")), result.getTable());
+    }
+
+    @Test
+    public void testIndexInsertNull() throws Exception {
+        createTestTable();
+        nineSampleRows();
+        databaseService.executeQuery("create index `id` on `test`");
+        databaseService.executeQuery("insert into `test`(`data`) values(`10`)");
+
+        QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 8");
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("8"), singletonList("9")), result.getTable());
+    }
 }

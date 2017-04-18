@@ -7,7 +7,7 @@ public class IntegerIndex extends Index<Integer> {
     }
 
     @Override
-    Integer map(String s) {
+    Integer mapValue(String s) {
         return Integer.parseInt(s);
     }
 }

@@ -6,7 +6,7 @@ public class StringIndex extends Index<String> {
     }
 
     @Override
-    String map(String s) {
+    String mapValue(String s) {
         return s;
     }
 }

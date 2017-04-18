@@ -78,17 +78,19 @@ public abstract class Index<T extends Comparable<T>> {
     }
 
     private static <T extends Comparable<T>> List<List<String>> getDistinctSortedRows(Function<String, T> mapper, int index, List<List<String>> rows) {
-        return sortByColumn(distinctBy(rows, row -> mapper.apply(row.get(index))), index, mapper);
+        return sortByColumn(distinctBy(CollectionsUtils.withoutNulls(rows, row -> row.get(index)), row -> mapper.apply(row.get(index))), index, mapper);
     }
 
     private static <T extends Comparable<T>> Map<T, Set<Integer>> getIndexesWithColumnValue(Function<String, T> mapper,
                                                                                             int index,
                                                                                             List<List<String>> rows) {
-        return CollectionsUtils.indexes(rows).collect(toMap(
-                i -> mapper.apply(rows.get(i).get(index)),
-                CollectionsUtils::singleSet,
-                CollectionsUtils::merge
-        ));
+        return CollectionsUtils.indexes(rows)
+                .filter(i -> rows.get(i).get(index) != null)
+                .collect(toMap(
+                        i -> mapper.apply(rows.get(i).get(index)),
+                        CollectionsUtils::singleSet,
+                        CollectionsUtils::merge
+                ));
     }
 
     private static <T extends Comparable<T>> BTree<T> createBTree(final Function<String, T> mapper,
@@ -119,10 +121,10 @@ public abstract class Index<T extends Comparable<T>> {
     }
 
     public void insert(String value, int index) {
-        bTree.insert(map(value), index);
+        bTree.insert(mapValue(value), index);
     }
 
-    abstract T map(String s);
+    abstract T mapValue(String s);
 
     public static Index<Integer> createIntIndex(Table table, String column) {
         return new IntegerIndex(createBTree(Integer::parseInt, getIndex(column, table.getColumns()), table.getRows()));
