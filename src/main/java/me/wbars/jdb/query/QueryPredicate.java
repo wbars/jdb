@@ -49,18 +49,14 @@ public class QueryPredicate<T extends Comparable<T>> {
 
     public final boolean test(List<String> row, List<ColumnData> columns) {
         int compareResult = compareMapper.apply(row.get(getIndex(columnName, columns))).compareTo(valueToCompare);
-        boolean result = false;
-        if (sign == CompareSign.EQ) result = compareResult == 0;
-        if (sign == CompareSign.GT) result = compareResult > 0;
-        if (sign == CompareSign.LT) result = compareResult < 0;
-        if (sign == CompareSign.LTE) result = compareResult <= 0;
-        if (sign == CompareSign.GTE) result = compareResult >= 0;
-        if (sign == CompareSign.NE) result = compareResult != 0;
+        if (sign == CompareSign.EQ) return compareResult == 0;
+        if (sign == CompareSign.GT) return compareResult > 0;
+        if (sign == CompareSign.LT) return compareResult < 0;
+        if (sign == CompareSign.LTE) return compareResult <= 0;
+        if (sign == CompareSign.GTE) return compareResult >= 0;
+        if (sign == CompareSign.NE) return compareResult != 0;
         //todo check if sign was reached
-
-        return result
-                && (and == null || and.test(row, columns))
-                || (or != null && or.test(row, columns));
+        throw new IllegalArgumentException();
     }
 
     private static int getIndex(String columnName, List<ColumnData> columns) {
@@ -83,5 +79,13 @@ public class QueryPredicate<T extends Comparable<T>> {
 
     public boolean isSingle() {
         return and == null && or == null;
+    }
+
+    public QueryPredicate and() {
+        return and;
+    }
+
+    public QueryPredicate or() {
+        return or;
     }
 }

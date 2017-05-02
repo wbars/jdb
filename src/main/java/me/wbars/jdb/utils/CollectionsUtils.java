@@ -60,4 +60,17 @@ public class CollectionsUtils {
     public static <T, S> List<T> withoutNulls(List<T> l, Function<T, S> f) {
         return l.stream().filter(a -> f.apply(a) != null).collect(toList());
     }
+
+    public static <T> List<T> intersection(List<T> l1, List<T> l2) {
+        HashSet<T> s2Set = new HashSet<>(l2);
+        return l1.stream()
+                .filter(s2Set::contains)
+                .collect(toList());
+    }
+
+    public static <T> List<T> union(List<T> l1, List<T> l2) {
+        return Stream.concat(l1.stream(), l2.stream())
+                .distinct()
+                .collect(toList());
+    }
 }

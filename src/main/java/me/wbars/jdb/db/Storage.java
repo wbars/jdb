@@ -10,15 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static me.wbars.jdb.query.CompareSign.NE;
-import static me.wbars.jdb.utils.CollectionsUtils.indexes;
-import static me.wbars.jdb.utils.CollectionsUtils.withIndexes;
+import static me.wbars.jdb.utils.CollectionsUtils.*;
 
 public class Storage {
     private final Map<String, Table> tables = new HashMap<>();
@@ -72,8 +69,10 @@ public class Storage {
         Set<Integer> columnsIndexesToInclude = indexes(tableColumnsNames)
                 .filter(i -> columns.contains(tableColumnsNames.get(i)))
                 .collect(toSet());
-        return tryIndexScan(tableName, predicate, getTableColumns(tableName))
-                .map(values -> withIndexes(values, columnsIndexesToInclude))
+        List<List<String>> rows = tables.get(tableName).getRows();
+        return tryIndexScan(tableName, predicate, getTableColumns(tableName)).stream()
+                .sorted()
+                .map(i -> withIndexes(rows.get(i), columnsIndexesToInclude))
                 .collect(toList());
     }
 
@@ -96,18 +95,19 @@ public class Storage {
                 .orElseThrow(IllegalArgumentException::new);
     }
 
-    private Stream<List<String>> tryIndexScan(String tableName, QueryPredicate predicate, List<ColumnData> tableColumns) {
+    private List<Integer> tryIndexScan(String tableName, QueryPredicate predicate, List<ColumnData> tableColumns) {
         Index<? extends Comparable<?>> index = predicate != null ? indexes.getOrDefault(tableName, emptyMap()).get(predicate.getColumn()) : null;
-        return validPredicate(predicate, index) ? index.scan(predicate, tables.get(tableName).getRows()) : seqScan(predicate, tables.get(tableName), tableColumns);
+        List<Integer> indexes = index != null ? index.scan(predicate) : seqScan(predicate, tables.get(tableName), tableColumns);
+        if (predicate == null) return indexes;
+
+        List<Integer> and = predicate.and() != null ? tryIndexScan(tableName, predicate.and(), tableColumns) : indexes;
+        List<Integer> or = predicate.or() != null ? tryIndexScan(tableName, predicate.or(), tableColumns) : emptyList();
+        return union(intersection(indexes, and), or);
     }
 
-    private boolean validPredicate(QueryPredicate predicate, Index<? extends Comparable<?>> index) {
-        return index != null && predicate.getSign() != NE && predicate.isSingle();
-    }
-
-    private Stream<List<String>> seqScan(QueryPredicate predicate, Table table, List<ColumnData> tableColumns) {
-        return table.getRows().stream()
-                .filter(values -> predicate == null || predicate.test(values, tableColumns));
+    private List<Integer> seqScan(QueryPredicate predicate, Table table, List<ColumnData> tableColumns) {
+        List<List<String>> rows = table.getRows();
+        return predicate != null ? indexes(rows).filter(i -> predicate.test(rows.get(i), tableColumns)).collect(toList()) : indexes(rows).collect(toList());
     }
 
     public boolean indexExists(String tableName, String column) {

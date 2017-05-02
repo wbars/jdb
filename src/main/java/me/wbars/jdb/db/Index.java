@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Stream.concat;
 import static me.wbars.jdb.query.CompareSign.*;
@@ -26,21 +26,22 @@ public abstract class Index<T extends Comparable<T>> {
         this.bTree = bTree;
     }
 
-    public Stream<List<String>> scan(QueryPredicate<T> predicate, List<List<String>> rows) {
-        return getIndexes(bTree, predicate).sorted().map(rows::get);
+    public List<Integer> scan(QueryPredicate<T> predicate) {
+        return getIndexes(bTree, predicate).collect(toList());
     }
 
-    private Stream<Integer> getIndexes(BTree<T> bTree, final QueryPredicate<T> predicate) {
-        if (bTree == null) return indexes(null);
+    private Stream<Integer> getIndexes(BTree<T> root, final QueryPredicate<T> predicate) {
+        if (root == null) return indexes(null);
 
-        int compare = bTree.getValue().compareTo(predicate.getValueToCompare());
+        int compare = root.getValue().compareTo(predicate.getValueToCompare());
         CompareSign sign = predicate.getSign();
-        BTree<T> right = bTree.getRight();
-        BTree<T> left = bTree.getLeft();
+        BTree<T> right = root.getRight();
+        BTree<T> left = root.getLeft();
         if (compare == 0) {
-            if (sign == EQ) return indexes(bTree);
-            if (sign == GTE) return concat(indexes(bTree), allIndexes(right));
-            if (sign == LTE) return concat(indexes(bTree), allIndexes(left));
+            if (sign == NE) return concat(indexes(left), indexes(right));
+            if (sign == EQ) return indexes(root);
+            if (sign == GTE) return concat(indexes(root), allIndexes(right));
+            if (sign == LTE) return concat(indexes(root), allIndexes(left));
             if (sign == GT) return allIndexes(right);
             if (sign == LT) return allIndexes(left);
         }
@@ -48,13 +49,15 @@ public abstract class Index<T extends Comparable<T>> {
         if (compare > 0) {
             if (sign == EQ || sign == LTE || sign == LT) return getIndexes(left, predicate);
             if (sign == GTE || sign == GT)
-                return concat(allIndexes(bTree.getRight()), concat(indexes(bTree), getIndexes(left, predicate)));
+                return concat(allIndexes(root.getRight()), concat(indexes(root), getIndexes(left, predicate)));
+            if (sign == NE) return concat(concat(getIndexes(left, predicate), allIndexes(right)), indexes(root));
         }
 
         // < 0
         if (sign == EQ || sign == GTE || sign == GT) return getIndexes(right, predicate);
         if (sign == LTE || sign == LT)
-            return concat(allIndexes(bTree.getLeft()), concat(indexes(bTree), getIndexes(right, predicate)));
+            return concat(allIndexes(root.getLeft()), concat(indexes(root), getIndexes(right, predicate)));
+        if (sign == NE) return concat(concat(allIndexes(left), getIndexes(right, predicate)), indexes(root));
 
         throw new IllegalArgumentException();
     }
@@ -70,7 +73,7 @@ public abstract class Index<T extends Comparable<T>> {
     private static <T extends Comparable<T>> List<List<String>> sortByColumn(List<List<String>> rows, int index, Function<String, T> mapper) {
         return rows.stream()
                 .sorted(Comparator.comparing(s -> mapper.apply(s.get(index))))
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     private static <T extends Comparable<T>> BTree<T> createBTree(Function<String, T> mapper, int index, List<List<String>> rows) {

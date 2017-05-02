@@ -362,4 +362,64 @@ public class DatabaseServiceTest {
         QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 8");
         assertTableWithSizeAndValues(2, 1, asList(singletonList("8"), singletonList("9")), result.getTable());
     }
+
+    @Test
+    public void selectIndexedAndSimpleColumns() throws Exception {
+        createTestTable();
+        nineSampleRows();
+        databaseService.executeQuery("create index `id` on `test`");
+
+        QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 5 and `data` <= `7`");
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("5"), singletonList("6"), singletonList("7")), result.getTable());
+
+        result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 8 or `data` <= `2`");
+        assertTableWithSizeAndValues(4, 1, asList(singletonList("1"), singletonList("2"), singletonList("8"), singletonList("9")), result.getTable());
+    }
+
+    @Test
+    public void select2IndexedColumns() throws Exception {
+        createTestTable();
+        nineSampleRows();
+        databaseService.executeQuery("create index `id` on `test`");
+        databaseService.executeQuery("create index `data` on `test`");
+
+        QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 5 and `data` <= `7`");
+        assertTableWithSizeAndValues(3, 1, asList(singletonList("5"), singletonList("6"), singletonList("7")), result.getTable());
+
+        result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 8 or `data` <= `2`");
+        assertTableWithSizeAndValues(4, 1, asList(singletonList("1"), singletonList("2"), singletonList("8"), singletonList("9")), result.getTable());
+    }
+
+    @Test
+    public void indexNegatePredicate() throws Exception {
+        createTestTable();
+        populateDummyData();
+
+        databaseService.executeQuery("create index `data` on `test`");
+        QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `data` != `one_again`");
+        assertThat(result.isOk(), is(true));
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("one"), singletonList("two")), result.getTable());
+    }
+
+    @Test
+    public void select2IndexedColumnsNegatePredicate() throws Exception {
+        createTestTable();
+        nineSampleRows();
+        databaseService.executeQuery("create index `id` on `test`");
+        databaseService.executeQuery("create index `data` on `test`");
+
+        QueryResult result = databaseService.executeQuery("select (`id`) from `test` where `id` >= 8 and `id` != 9 or `data` <= `2` and `data` != `1`");
+        assertTableWithSizeAndValues(2, 1, asList(singletonList("2"), singletonList("8")), result.getTable());
+    }
+
+    @Test
+    public void indexDoubleNegatePredicate() throws Exception {
+        createTestTable();
+        populateDummyData();
+
+        databaseService.executeQuery("create index `data` on `test`");
+        QueryResult result = databaseService.executeQuery("select (`data`) from `test` where `data` != `one_again` and `data` != `two`");
+        assertThat(result.isOk(), is(true));
+        assertTableWithSizeAndValues(1, 1, singletonList(singletonList("one")), result.getTable());
+    }
 }
